@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { FiMail, FiLock } from "react-icons/fi";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import useStore from "@/store/useStore";
-import logo from "@/images/logo.jpg"
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -56,11 +56,16 @@ if (!emailRegex.test(email)) {
   return (
     <div className="w-full h-screen font-poppins flex flex-wrap">
       <div className="p-6 flex flex-col justify-center bg-gray-50 w-full md:w-1/3">
-        <div className="mb-52 text-center">
-        <p className="text-blue-950 text-3xl md:text-4xl">
-            <span className="font-extrabold">Teach</span>Plus
-           
-          </p>        </div>
+        <div className="mb-8 text-center">
+          <Image
+            src="/logo.png"
+            alt="TeachPlus Logo"
+            width={420}
+            height={220}
+            className="mx-auto rounded-lg"
+            priority
+          />
+        </div>
         <div className="mt-16 text-center">
           <p className="text-2xl md:text-3xl font-bold text-blue-950">
             Simplify teaching schedules & payments
