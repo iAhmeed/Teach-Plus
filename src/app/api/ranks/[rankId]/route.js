@@ -1,44 +1,57 @@
-import { database } from "@/lib/mysql"
-
+import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server";
+
 export async function PUT(req, { params }) {
     try {
         const authorizedAdminId = req.headers.get("x-admin-id")
         const { rankId } = await params
-        const [rank] = await database.execute("SELECT * FROM Ranks_of_teachers WHERE rank_id = ?", [rankId])
-        if (!rank.length) {
+
+        const rank = await prisma.ranksOfTeacher.findUnique({
+            where: { rank_id: Number(rankId) }
+        });
+
+        if (!rank) {
             return Response.json({ status: "FAILED", message: "Rank not found !" }, { status: 404 })
         }
-        const searchQuery = `SELECT D.admin_id 
-        FROM Ranks_of_teachers R 
-        JOIN Teachers T ON R.teacher_id = T.teacher_id
-        JOIN Admins D ON T.admin_id = D.admin_id
-        WHERE R.rank_id = ?
-        `
-        const [adminOfRank] = await database.execute(searchQuery, [rankId])
-        if (!adminOfRank.length) {
-            return Response.json({ status: "FAILED", message: "Rank not found or its admin is unknown !" }, { status: 404 })
+
+        // Check ownership via teacher
+        const teacherOfRank = await prisma.teacher.findUnique({
+            where: { teacher_id: rank.teacher_id }
+        });
+
+        if (!teacherOfRank) {
+            return Response.json({ status: "FAILED", message: "Rank's teacher not found !" }, { status: 404 })
         }
-        if (adminOfRank[0].admin_id != authorizedAdminId) {
+
+        if (teacherOfRank.admin_id != Number(authorizedAdminId)) {
             return Response.json({ status: "FAILED", message: "Unauthorized ! This rank doesn't belong to this admin" }, { status: 401 })
         }
+
         let { newTeacherId, newStartingDate, newRank } = await req.json()
-        newTeacherId = newTeacherId || rank[0].teacher_id
-        newStartingDate = newStartingDate || rank[0].starting_date
-        newRank = newRank || rank[0].rank
-        const [adminOfTeacher] = await database.execute("SELECT admin_id FROM Teachers WHERE teacher_id = ?", [newTeacherId])
-        if (!adminOfTeacher.length) {
-            return Response.json({ status: "FAILED", message: "Teacher doesn't exist or his admin is unknown !" }, { status: 404 })
+
+        // If teacher ID is changing, verify new teacher
+        if (newTeacherId && newTeacherId != rank.teacher_id) {
+            const newTeacher = await prisma.teacher.findUnique({
+                where: { teacher_id: Number(newTeacherId) }
+            });
+
+            if (!newTeacher) {
+                return Response.json({ status: "FAILED", message: "Teacher doesn't exist or his admin is unknown !" }, { status: 404 })
+            }
+            if (newTeacher.admin_id != Number(authorizedAdminId)) {
+                return Response.json({ status: "FAILED", message: "Unauthorized ! this teacher doesn't belong to this admin !" }, { status: 401 })
+            }
         }
-        if (adminOfTeacher[0].admin_id != authorizedAdminId) {
-            return Response.json({ status: "FAILED", message: "Unauthorized ! this teacher doesn't belong to this admin !" }, { status: 401 })
-        }
-        const updateQuery = `UPDATE Ranks_of_teachers
-        SET teacher_id = ?, starting_date = ?, rank = ?
-        WHERE rank_id = ?
-        `
-        const updateValues = [newTeacherId, newStartingDate, newRank, rankId]
-        await database.execute(updateQuery, updateValues)
+
+        await prisma.ranksOfTeacher.update({
+            where: { rank_id: Number(rankId) },
+            data: {
+                teacher_id: newTeacherId ? Number(newTeacherId) : undefined,
+                starting_date: newStartingDate ? new Date(newStartingDate) : undefined,
+                rank: newRank || undefined
+            }
+        });
+
         return Response.json({ status: "SUCCESS", message: "Rank updated successfully !" }, { status: 200 })
 
     } catch (err) {
@@ -49,27 +62,37 @@ export async function PUT(req, { params }) {
 
 export async function DELETE(req, context) {
     try {
-        const { rankId } = await context.params;  //  Attendre `params` avant d’accéder à `rankId`
+        const { rankId } = await context.params;
 
         if (!rankId) {
             return NextResponse.json({ message: "rankId est requis" }, { status: 400 });
         }
         const authorizedAdminId = req.headers.get("x-admin-id")
-        const searchQuery = `SELECT D.admin_id FROM
-        Ranks_of_teachers R
-        JOIN Teachers T ON R.teacher_id = T.teacher_id
-        JOIN Admins D ON T.admin_id = D.admin_id
-        WHERE R.rank_id = ?
-        `
-        const [adminOfRank] = await database.execute(searchQuery, [rankId])
-        if (!adminOfRank.length) {
+
+        const rank = await prisma.ranksOfTeacher.findUnique({
+            where: { rank_id: Number(rankId) }
+        });
+
+        if (!rank) {
             return Response.json({ status: "FAILED", message: "Rank not found or its admin is unknown !" }, { status: 404 })
         }
-        if (adminOfRank[0].admin_id != authorizedAdminId) {
+
+        const teacherOfRank = await prisma.teacher.findUnique({
+            where: { teacher_id: rank.teacher_id }
+        });
+
+        if (!teacherOfRank) {
+            return Response.json({ status: "FAILED", message: "Rank's teacher not found !" }, { status: 404 })
+        }
+
+        if (teacherOfRank.admin_id != Number(authorizedAdminId)) {
             return Response.json({ status: "FAILED", message: "Unauthorized ! This rank doesn't belong to this admin" }, { status: 401 })
         }
+
         // Supprimer le grade
-        await database.execute("DELETE FROM Ranks_of_teachers WHERE rank_id = ?", [rankId]);
+        await prisma.ranksOfTeacher.delete({
+            where: { rank_id: Number(rankId) }
+        });
 
         return NextResponse.json({ message: "Grade supprimé avec succès" }, { status: 200 });
 

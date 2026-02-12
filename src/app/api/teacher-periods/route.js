@@ -1,4 +1,4 @@
-import { database } from "@/lib/mysql";
+import { prisma } from "@/lib/prisma";
 
 async function getTeacherPeriods(teacherId, academicYear) {
   const [startYear, endYear] = academicYear.split('/');
@@ -6,110 +6,126 @@ async function getTeacherPeriods(teacherId, academicYear) {
 
   const academicYearStart = new Date(`${startYear}-08-31`);
   const academicYearEnd = new Date(`${endYear}-07-31`);
-  const [periods] = await database.execute(
-    `SELECT * FROM Periods WHERE \`from\` >= ? AND \`to\` <= ? AND NOT \`from\` > CURDATE()`,
-    [academicYearStart, academicYearEnd]
-  );
-  const [rankChanges] = await database.execute(
-    `SELECT starting_date FROM Ranks_of_teachers 
-     WHERE teacher_id = ? AND starting_date BETWEEN ? AND ? AND NOT starting_date > CURDATE()
-     ORDER BY starting_date`,
-    [teacherId, academicYearStart, academicYearEnd]
-  );
+  const now = new Date();
+
+  const periods = await prisma.period.findMany({
+    where: {
+      from: { gte: academicYearStart },
+      to: { lte: academicYearEnd },
+      NOT: { from: { gt: now } }
+    }
+  });
+
+  const rankChanges = await prisma.ranksOfTeacher.findMany({
+    where: {
+      teacher_id: Number(teacherId),
+      starting_date: {
+        gte: academicYearStart,
+        lte: academicYearEnd
+      },
+      NOT: { starting_date: { gt: now } }
+    },
+    orderBy: { starting_date: 'asc' },
+    select: { starting_date: true }
+  });
+
   if (rankChanges.length === 0) {
     const availablePeriods = periods.filter(p => {
       const periodStart = new Date(p.from);
       const periodEnd = new Date(p.to);
-      const now = new Date();
       return periodEnd.getTime() < now.getTime() && periodStart.getTime() < now.getTime();
-    }
-    );
+    });
+
     let periodsWithRanks = [];
     for (const period of availablePeriods) {
-      const [rank] = await database.execute("SELECT rank FROM Ranks_of_teachers WHERE teacher_id = ? AND starting_date <= ? ORDER BY starting_date DESC LIMIT 1", [teacherId, period.from])
-      if (rank.length) {
-        periodsWithRanks.push({
-          from: new Date(period.from).toISOString().split('T')[0],
-          to: new Date(period.to).toISOString().split('T')[0],
-          rank: rank[0].rank
-        });
-      }
-      else {
-        periodsWithRanks.push({
-          from: new Date(period.from).toISOString().split('T')[0],
-          to: new Date(period.to).toISOString().split('T')[0],
-          rank: null
-        });
-      }
+      const rank = await prisma.ranksOfTeacher.findFirst({
+        where: {
+          teacher_id: Number(teacherId),
+          starting_date: { lte: period.from }
+        },
+        orderBy: { starting_date: 'desc' },
+        select: { rank: true }
+      });
+
+      periodsWithRanks.push({
+        from: new Date(period.from).toISOString().split('T')[0],
+        to: new Date(period.to).toISOString().split('T')[0],
+        rank: rank ? rank.rank : null
+      });
     }
     return periodsWithRanks
   }
+
   const result = [];
 
   for (const period of periods) {
     const periodStart = new Date(period.from);
     const periodEnd = new Date(period.to);
+
+    // Skip future periods logic inside the loop if needed, though query handles some
+    // The original logic filters changes within the period
     const changesInPeriod = rankChanges.filter(change => {
       const changeDate = new Date(change.starting_date);
-      return changeDate.getTime() > periodStart.getTime() && changeDate.getTime() < periodEnd.getTime() && changeDate.getTime() < new Date().getTime();
+      return changeDate.getTime() > periodStart.getTime() && changeDate.getTime() < periodEnd.getTime() && changeDate.getTime() < now.getTime();
     });
+
     if (changesInPeriod.length === 0) {
-      if (periodEnd.getTime() < new Date().getTime()) {
-        const [rank] = await database.execute("SELECT rank FROM Ranks_of_teachers WHERE teacher_id = ? AND starting_date <= ? ORDER BY starting_date DESC LIMIT 1", [teacherId, period.from])
-        if (rank.length) {
-          result.push({
-            from: new Date(period.from).toISOString().split('T')[0],
-            to: new Date(period.to).toISOString().split('T')[0],
-            rank: rank[0].rank
-          });
-        }
-        else {
-          result.push({
-            from: new Date(period.from).toISOString().split('T')[0],
-            to: new Date(period.to).toISOString().split('T')[0],
-            rank: null
-          });
-        }
+      if (periodEnd.getTime() < now.getTime()) {
+        const rank = await prisma.ranksOfTeacher.findFirst({
+          where: {
+            teacher_id: Number(teacherId),
+            starting_date: { lte: period.from }
+          },
+          orderBy: { starting_date: 'desc' },
+          select: { rank: true }
+        });
+
+        result.push({
+          from: new Date(period.from).toISOString().split('T')[0],
+          to: new Date(period.to).toISOString().split('T')[0],
+          rank: rank ? rank.rank : null
+        });
       }
     } else {
       let currentStart = periodStart;
       const sortedChanges = changesInPeriod
         .map(c => new Date(c.starting_date))
         .sort((a, b) => a.getTime() - b.getTime());
+
       for (const changeDate of sortedChanges) {
-        const [rank] = await database.execute("SELECT rank FROM Ranks_of_teachers WHERE teacher_id = ? AND starting_date <= ? ORDER BY starting_date DESC LIMIT 1", [teacherId, currentStart.toISOString().split('T')[0]])
-        if (rank.length) {
-          result.push({
-            from: currentStart.toISOString().split('T')[0],
-            to: new Date(changeDate.getTime() - 86400000).toISOString().split('T')[0],
-            rank: rank[0].rank
-          });
-        }
-        else {
-          result.push({
-            from: currentStart.toISOString().split('T')[0],
-            to: new Date(changeDate.getTime() - 86400000).toISOString().split('T')[0],
-            rank: null
-          });
-        }
+        const rank = await prisma.ranksOfTeacher.findFirst({
+          where: {
+            teacher_id: Number(teacherId),
+            starting_date: { lte: currentStart }
+          },
+          orderBy: { starting_date: 'desc' },
+          select: { rank: true }
+        });
+
+        result.push({
+          from: currentStart.toISOString().split('T')[0],
+          // Original: changeDate - 1 day (86400000 ms)
+          to: new Date(changeDate.getTime() - 86400000).toISOString().split('T')[0],
+          rank: rank ? rank.rank : null
+        });
         currentStart = changeDate;
       }
-      if (periodEnd.getTime() < new Date().getTime()) {
-        const [rank] = await database.execute("SELECT rank FROM Ranks_of_teachers WHERE teacher_id = ? AND starting_date <= ? ORDER BY starting_date DESC LIMIT 1", [teacherId, currentStart.toISOString().split('T')[0]])
-        if (rank.length) {
-          result.push({
-            from: currentStart.toISOString().split('T')[0],
-            to: periodEnd.toISOString().split('T')[0],
-            rank: rank[0].rank
-          });
-        }
-        else {
-          result.push({
-            from: currentStart.toISOString().split('T')[0],
-            to: periodEnd.toISOString().split('T')[0],
-            rank: null
-          });
-        }
+
+      if (periodEnd.getTime() < now.getTime()) {
+        const rank = await prisma.ranksOfTeacher.findFirst({
+          where: {
+            teacher_id: Number(teacherId),
+            starting_date: { lte: currentStart }
+          },
+          orderBy: { starting_date: 'desc' },
+          select: { rank: true }
+        });
+
+        result.push({
+          from: currentStart.toISOString().split('T')[0],
+          to: periodEnd.toISOString().split('T')[0],
+          rank: rank ? rank.rank : null
+        });
       }
     }
   }

@@ -1,4 +1,4 @@
-import { database } from "@/lib/mysql";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt"
 
 // Function that checks if the entered email actually exists...
@@ -18,26 +18,35 @@ export async function POST(req) {
             return Response.json({ status: "FAILED", message: "A required data field is missing!" }, { status: 400 });
         }
         if (!isValidEmail(email)) {
-            return Response.json({status : "FAILED", message : "This email doesn't exist !"}, {status : 400});
+            return Response.json({ status: "FAILED", message: "This email doesn't exist !" }, { status: 400 });
         }
-        const nonRequiredData = [phoneNumber, dateOfBirth, address, picture].map(value => value ?? null);
 
-        const [admins] = await database.execute("SELECT * FROM Admins WHERE email = ?", [email])
-        if (admins.length) {
-            return Response.json({status : "FAILED", message : "Admin already exists !"}, {status : 400})
+        const existingAdmin = await prisma.admin.findUnique({
+            where: { email: email }
+        });
+
+        if (existingAdmin) {
+            return Response.json({ status: "FAILED", message: "Admin already exists !" }, { status: 400 })
         }
+
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password, salt)
 
-        const insertionQuery = `
-            INSERT INTO Admins 
-            (email, password_hash, first_name, family_name, phone_number, date_of_birth, address, picture, department, created_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        `;
-        
-        await database.execute(insertionQuery, [email, hashedPassword, firstName, familyName, ...nonRequiredData, department]);
+        await prisma.admin.create({
+            data: {
+                email: email,
+                password_hash: hashedPassword,
+                first_name: firstName,
+                family_name: familyName,
+                phone_number: phoneNumber || null,
+                date_of_birth: dateOfBirth ? new Date(dateOfBirth) : null,
+                address: address || null,
+                picture: picture || null,
+                department: department
+            }
+        });
 
-        return Response.json({ status: "SUCCESS" , message : "Admin created successfully !"}, { status: 200 });
+        return Response.json({ status: "SUCCESS", message: "Admin created successfully !" }, { status: 200 });
 
     } catch (error) {
         console.error("Error inserting admin:", error);

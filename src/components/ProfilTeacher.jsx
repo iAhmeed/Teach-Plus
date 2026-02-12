@@ -17,15 +17,15 @@ export default function ProfileTeacher({ teacher, onClose }) {
 
   const initialTeacher = {
     teacherId: teacher.teacher_id,
-    email: teacher.email,
-    phoneNumber: teacher.phone_number,
+    email: teacher.email || "",
+    phoneNumber: teacher.phone_number || "",
     dateOfBirth: teacher.date_of_birth,
-    familyName: teacher.family_name,
-    firstName: teacher.first_name,
+    familyName: teacher.family_name || "",
+    firstName: teacher.first_name || "",
     hoursOutside: teacher.hours_outside || "0",
     isActive: teacher.is_active,
-    bio: teacher.bio,
-    picture: teacher.picture,
+    bio: teacher.bio || "",
+    picture: teacher.picture || "",
     type: teacher.type || "Permanent",
     accountNumber: teacher.account_number || ""
   };
@@ -85,7 +85,7 @@ export default function ProfileTeacher({ teacher, onClose }) {
     }
 
 
-    if (updatedTeacher.bio.length > 100) {
+    if ((updatedTeacher.bio || "").length > 100) {
       newErrors.bio = "Bio must be under 100 characters";
     }
 
@@ -194,7 +194,7 @@ export default function ProfileTeacher({ teacher, onClose }) {
               label: "Date of Birth",
               name: "dateOfBirth",
               type: "date",
-              value: new Date(updatedTeacher.dateOfBirth).toISOString().split("T")[0] || "0000-00-00",
+              value: updatedTeacher.dateOfBirth ? new Date(updatedTeacher.dateOfBirth).toISOString().split("T")[0] : "",
               error: errors.dateOfBirth,
             },
             {
@@ -450,8 +450,8 @@ export default function ProfileTeacher({ teacher, onClose }) {
             onClick={handleUpdate}
             disabled={!isChanged}
             className={`flex-1 p-3 text-white rounded-lg ${isChanged
-                ? "bg-blue-600  hover:bg-blue-700 cursor-pointer"
-                : "bg-gray-400  cursor-not-allowed"
+              ? "bg-blue-600  hover:bg-blue-700 cursor-pointer"
+              : "bg-gray-400  cursor-not-allowed"
               }`}
             whileHover={isChanged ? { scale: 1.02 } : {}}
             whileTap={isChanged ? { scale: 0.98 } : {}}

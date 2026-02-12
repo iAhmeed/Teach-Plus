@@ -1,4 +1,4 @@
-import { database } from "@/lib/mysql"
+import { prisma } from "@/lib/prisma"
 export async function GET(req) {
     try {
         const authorizedAdminId = req.headers.get("x-admin-id")
@@ -6,7 +6,16 @@ export async function GET(req) {
         const promo = searchParams.get("promo")
         const academicYear = searchParams.get("academicYear")
         const semester = searchParams.get("semester")
-        const [timetable] = await database.execute("SELECT * FROM Sessions WHERE academic_level = ? AND academic_year = ? AND semester = ? AND admin_id = ?", [promo, academicYear, semester, authorizedAdminId])
+
+        const timetable = await prisma.session.findMany({
+            where: {
+                academic_level: Number(promo),
+                academic_year: academicYear,
+                semester: semester,
+                admin_id: Number(authorizedAdminId)
+            }
+        });
+
         if (!timetable.length) {
             return Response.json({ status: "FAILED", message: "Timetable not found !" }, { status: 404 })
         }

@@ -88,7 +88,7 @@ Teach Plus is a comprehensive educational management system designed for schools
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/iAhmeed/Teach-Plus
    cd "Teach Plus"
    ```
 

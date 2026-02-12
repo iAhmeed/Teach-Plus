@@ -32,7 +32,7 @@ export default function TeacherDashboard() {
         const data = await getStatistics(from, to);
         setStats(data);
         console.log(data);
-        
+
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
@@ -64,7 +64,7 @@ export default function TeacherDashboard() {
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
           <p className="font-bold">Error Loading Data</p>
           <p>{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
           >
@@ -75,18 +75,18 @@ export default function TeacherDashboard() {
     );
   }
 
-  const absenceData = stats.absencesCountDistributionByMonth.map(item => ({
+  const absenceData = (stats?.absencesCountDistributionByMonth || []).map(item => ({
     month: new Date(2000, item.month - 1, 1).toLocaleString('default', { month: 'short' }),
     absences: item.absences_count
   }));
 
   console.log(absenceData);
-  
+
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Teacher Management Dashboard</h1>
-      
+
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -100,7 +100,7 @@ export default function TeacherDashboard() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">Select a period</option>
-              {periods.map((period) => (
+              {periods && periods.map((period) => (
                 <option key={period.period_id} value={period.period_id}>
                   {new Date(period.from).toLocaleDateString()} - {new Date(period.to).toLocaleDateString()}
                 </option>
@@ -115,8 +115,8 @@ export default function TeacherDashboard() {
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Teachers</h2>
           <div className="text-3xl font-bold text-gray-900">{stats.totalTeachersCount}</div>
           <div className="flex justify-between mt-4">
-            <span className="text-green-600 font-medium">Active: {stats.activeTeachersCount ||"0"}</span>
-            <span className="text-red-600 font-medium">Inactive: {stats.inactiveTeachersCount ||"0"}</span>
+            <span className="text-green-600 font-medium">Active: {stats.activeTeachersCount || "0"}</span>
+            <span className="text-red-600 font-medium">Inactive: {stats.inactiveTeachersCount || "0"}</span>
           </div>
         </div>
 
@@ -154,7 +154,7 @@ export default function TeacherDashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={stats.teachersCountDistributionByRank.map(item => ({
+                  data={(stats?.teachersCountDistributionByRank || []).map(item => ({
                     name: item.rank,
                     value: item.teachers_count
                   }))}
@@ -166,7 +166,7 @@ export default function TeacherDashboard() {
                   dataKey="value"
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
-                  {stats.teachersCountDistributionByRank.map((entry, index) => (
+                  {(stats?.teachersCountDistributionByRank || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

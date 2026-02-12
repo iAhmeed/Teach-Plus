@@ -1,24 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { database } from '@/lib/mysql'; // Assure-toi que le chemin est correct
+import { prisma } from '@/lib/prisma';
 
 // 🔹 GET : Récupérer tous les enseignants
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    if (searchParams.get("adminId")) {
+    const adminIdParam = searchParams.get("adminId");
+
+    if (adminIdParam) {
       const authorizedAdminId = req.headers.get("x-admin-id")
-      if (searchParams.get("adminId") != authorizedAdminId) {
+      if (adminIdParam != authorizedAdminId) {
         return NextResponse.json({ status: "FAILED", message: "Unauthorized ! the requested admin is not the same as the logged in admin" }, { status: 401 })
       }
-      const [teachers] = await database.execute("SELECT * FROM Teachers WHERE admin_id = ?", [authorizedAdminId])
+
+      const teachers = await prisma.teacher.findMany({
+        where: {
+          admin_id: Number(authorizedAdminId)
+        }
+      });
+
       if (!teachers) {
         return NextResponse.json({ status: "FAILED", message: "Teachers not found !" }, { status: 404 })
       }
+
       let teachersWithRanks = []
       for (const teacher of teachers) {
-        const [rank] = await database.execute("SELECT rank FROM Ranks_of_teachers WHERE teacher_id = ? AND starting_date >= ALL (SELECT starting_date FROM Ranks_of_teachers WHERE teacher_id = ?) LIMIT 1;", [teacher.teacher_id, teacher.teacher_id])
-        if (rank.length) {
-          teachersWithRanks.push(Object.assign({}, teacher, rank[0]))
+        // Find the current rank (latest starting_date)
+        const rank = await prisma.ranksOfTeacher.findFirst({
+          where: {
+            teacher_id: teacher.teacher_id
+          },
+          orderBy: {
+            starting_date: 'desc'
+          },
+          select: {
+            rank: true
+          }
+        });
+
+        if (rank) {
+          teachersWithRanks.push(Object.assign({}, teacher, rank))
         }
         else {
           teachersWithRanks.push(Object.assign({}, teacher, { rank: null }))
@@ -27,13 +48,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ status: "SUCCESS", message: "Teachers found successfully !", teachers: teachersWithRanks }, { status: 200 })
     }
     else {
-      const [rows]: any = await database.query("SELECT * FROM Teachers;");
-      return NextResponse.json(rows, { status: 200 });
+      const teachers = await prisma.teacher.findMany();
+      return NextResponse.json(teachers, { status: 200 });
     }
   } catch (error) {
     console.error("Error fetching teachers:", error);
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error"; // ✅ Vérification du type
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
     return NextResponse.json({
       error: "Internal Server Error",
@@ -51,33 +72,50 @@ export async function POST(req: Request) {
     if (!firstName || !familyName || !email || !type) {
       return NextResponse.json({ status: "FAILED", message: "A required data filed is missing !" }, { status: 400 })
     }
-    picture = picture || ""
-    phoneNumber = phoneNumber || ""
-    dateOfBirth = dateOfBirth || ""
+    picture = picture || null
+    phoneNumber = phoneNumber || null
+    dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null; // Make truly optional
     hoursOutside = hoursOutside || 0
-    bio = bio || ""
-    accountNumber = accountNumber || ""
+    bio = bio || null
+    accountNumber = accountNumber || null
 
-    const [teachersWithSameEmail]: any = await database.execute("SELECT * FROM Teachers WHERE email = ?", [email])
-    const [teachersWithSamePhoneNumber]: any = await database.execute("SELECT * FROM Teachers WHERE phone_number = ?", [phoneNumber])
-    const [teachersWithSameAccountNumber]: any = await database.execute("SELECT * FROM Teachers WHERE account_number = ?", [accountNumber])
-    if (teachersWithSameAccountNumber.length) {
-      return NextResponse.json({ status: "FAILED", message: "Account number must be unique !" }, { status: 400 })
-    }
-    if (teachersWithSameEmail.length) {
+    // Check for duplicates
+    const teacherWithSameEmail = await prisma.teacher.findUnique({ where: { email } });
+    if (teacherWithSameEmail) {
       return NextResponse.json({ status: "FAILED", message: "Email must be unique !" }, { status: 400 })
     }
-    if (teachersWithSamePhoneNumber.length) {
-      return NextResponse.json({ status: "FAILED", message: "Phone number must be unique !" }, { status: 400 })
+
+    if (phoneNumber) {
+      const teacherWithSamePhoneNumber = await prisma.teacher.findUnique({ where: { phone_number: phoneNumber } });
+      if (teacherWithSamePhoneNumber) {
+        return NextResponse.json({ status: "FAILED", message: "Phone number must be unique !" }, { status: 400 })
+      }
     }
 
+    if (accountNumber) {
+      const teacherWithSameAccountNumber = await prisma.teacher.findUnique({ where: { account_number: accountNumber } });
+      if (teacherWithSameAccountNumber) {
+        return NextResponse.json({ status: "FAILED", message: "Account number must be unique !" }, { status: 400 })
+      }
+    }
 
-    const [result]: any = await database.query(
-      "INSERT INTO Teachers (first_name, family_name, email, picture, hours_outside, phone_number, date_of_birth, admin_id, bio, type, account_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-      [firstName, familyName, email, picture, hoursOutside, phoneNumber, dateOfBirth, authorizedAdminId, bio, type, accountNumber]
-    );
+    const result = await prisma.teacher.create({
+      data: {
+        first_name: firstName,
+        family_name: familyName,
+        email: email,
+        picture: picture,
+        hours_outside: Number(hoursOutside),
+        phone_number: phoneNumber,
+        date_of_birth: new Date(dateOfBirth),
+        admin_id: Number(authorizedAdminId),
+        bio: bio,
+        type: type,
+        account_number: accountNumber
+      }
+    });
 
-    return NextResponse.json({ message: "Teacher added", id: result.insertId }, { status: 201 });
+    return NextResponse.json({ message: "Teacher added", id: result.teacher_id }, { status: 201 });
   } catch (error) {
     console.error("Error creating teacher:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

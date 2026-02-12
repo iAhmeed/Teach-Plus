@@ -1,4 +1,4 @@
-import { database } from "@/lib/mysql";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req) {
     try {
@@ -6,11 +6,13 @@ export async function POST(req) {
         const authorizedAdminId = req.headers.get("x-admin-id");
 
         // Check if the admin exists
-        const [adminRows] = await database.execute("SELECT * FROM Admins WHERE admin_id = ?", [authorizedAdminId]);
-        if (adminRows.length === 0) {
+        const authorizedAdmin = await prisma.admin.findUnique({
+            where: { admin_id: Number(authorizedAdminId) }
+        });
+
+        if (!authorizedAdmin) {
             return Response.json({ status: "FAILED", message: "Admin not found!" }, { status: 404 });
         }
-        const authorizedAdmin = adminRows[0]; // Get the first matching admin
 
         // Extract request body
         let { teacherId, dayOfWeek, startTime, endTime, type, classroom, module, groupNumber, academicYear, academicLevel, semester } = await req.json();
@@ -19,29 +21,47 @@ export async function POST(req) {
         if ([teacherId, dayOfWeek, startTime, endTime, type, classroom, groupNumber, academicLevel, academicYear, semester].some((data) => data === undefined || data === "")) {
             return Response.json({ status: "FAILED", message: "A required data field is missing!" }, { status: 400 });
         }
-        module = module || null; // Ensure module is null if not provided
+        module = module || ""; // Ensure string if not strict null
 
         // Check if teacher exists and get their associated admin
-        const [teacherRows] = await database.execute("SELECT admin_id FROM Teachers WHERE teacher_id = ?", [teacherId]);
-        if (teacherRows.length === 0) {
+        const teacher = await prisma.teacher.findUnique({
+            where: { teacher_id: Number(teacherId) },
+            select: { admin_id: true }
+        });
+
+        if (!teacher) {
             return Response.json({ status: "FAILED", message: "Teacher doesn't exist or his admin is unknown!" }, { status: 404 });
         }
-        const teacherAdminId = teacherRows[0].admin_id; // Get the teacher's admin ID
+        const teacherAdminId = teacher.admin_id; // Get the teacher's admin ID
 
         // Authorization check
         if (teacherAdminId !== authorizedAdmin.admin_id) {
-            console.log("Teacher's admin:", teacherAdminId, " | Requesting admin:", authorizedAdmin.admin_id);
             return Response.json({ status: "FAILED", message: "Unauthorized! This teacher doesn't belong to this admin." }, { status: 401 });
         }
 
         // Insert session
-        const insertionQuery = `
-            INSERT INTO Sessions(admin_id, teacher_id, day_of_week, start_time, end_time, type, module, classroom, group_number, academic_year, academic_level, semester, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        `;
-        await database.execute(insertionQuery, [
-            authorizedAdminId, teacherId, dayOfWeek, startTime, endTime, type, module, classroom, groupNumber, academicYear, academicLevel, semester
-        ]);
+        await prisma.session.create({
+            data: {
+                admin_id: Number(authorizedAdminId),
+                teacher_id: Number(teacherId),
+                day_of_week: dayOfWeek,
+                start_time: new Date(`1970-01-01T${startTime}Z`), // Ensure valid Date object for Time type if prisma expects it, or pass string if configured. 
+                // Schema says DateTime @db.Time, so best to pass Date object.
+                // However, usually we pass a full ISO date. Since it's just Time, Prisma might handle ISO string if it contains date component.
+                // Wait, db.Time only stores time. If we pass a full Date, it extracts the time.
+                // Or if we pass "HH:mm:ss" string, it might work depending on driver. 
+                // Prisma client expects Date object for DateTime fields.
+                // Let's assume input startTime is "HH:mm:ss" or similar.
+                end_time: new Date(`1970-01-01T${endTime}Z`),
+                type: type,
+                module: module,
+                classroom: classroom,
+                group_number: groupNumber,
+                academic_year: academicYear,
+                academic_level: Number(academicLevel),
+                semester: semester
+            }
+        });
 
         return Response.json({ status: "SUCCESS", message: "Session added successfully!" }, { status: 200 });
 

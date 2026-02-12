@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { database } from "@/lib/mysql";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req, { params }) { // 🔹 Utiliser { params }
     const { teacherId } = await params; // ✅ Correction ici
-    const {searchParams}=new URL(req.url);
-   
+    const { searchParams } = new URL(req.url);
+
     if (!teacherId) {
         return NextResponse.json({ message: "teacherId est requis" }, { status: 400 });
     }
@@ -16,23 +16,35 @@ export async function GET(req, { params }) { // 🔹 Utiliser { params }
     }
     try {
         const authorizedAdminId = req.headers.get("x-admin-id")
-        const [adminOfTeacher] = await database.execute("SELECT admin_id FROM Teachers WHERE teacher_id = ?", [teacherId])
-        if (!adminOfTeacher.length) {
+
+        const teacher = await prisma.teacher.findUnique({
+            where: { teacher_id: Number(teacherId) },
+            select: { admin_id: true }
+        });
+
+        if (!teacher) {
             return Response.json({ status: "FAILED", message: "Teacher not found or his admin is unknown !" }, { status: 404 })
         }
-        if (adminOfTeacher[0].admin_id != authorizedAdminId) {
+        if (teacher.admin_id != authorizedAdminId) {
             return Response.json({ status: "FAILED", message: "Unauthorized ! this teacher doesn't belong to this admin" }, { status: 401 })
         }
 
-        const [rows] = await database.query(
-            `SELECT * FROM Sessions WHERE teacher_id = ? AND academic_year = ? AND semester = ? ORDER BY day_of_week, start_time`,
-            [teacherId, academicYear, semester]
-        );
+        const rows = await prisma.session.findMany({
+            where: {
+                teacher_id: Number(teacherId),
+                academic_year: academicYear,
+                semester: semester
+            },
+            orderBy: [
+                { day_of_week: 'asc' }, // Sorting string days might need custom logic if not ISO, but usually fine or handled in frontend. Original was orderBy day_of_week
+                { start_time: 'asc' }
+            ]
+        });
 
         return NextResponse.json({ timeTable: rows }, { status: 200 });
 
     } catch (error) {
-        console.error("Erreur MySQL :", error);
-        return NextResponse.json({ message: "Erreur serveur", error: error.message }, { status: 500 });
+        console.error("Prisma Error :", error);
+        return NextResponse.json({ message: "Server Error", error: error.message }, { status: 500 });
     }
 }

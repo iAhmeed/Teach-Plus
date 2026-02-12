@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { database } from "@/lib/mysql";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
 export async function POST(req: NextRequest) {
@@ -9,20 +9,30 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ status: "FAILED", message: "Token and new password are required" }, { status: 400 });
         }
 
-        const [rows]: any = await database.execute(
-            "SELECT email FROM Password_resets WHERE token = ? AND expires_at > NOW()",
-            [token]
-        );
+        const resetRecord = await prisma.passwordReset.findFirst({
+            where: {
+                token: token,
+                expires_at: { gt: new Date() }
+            }
+        });
 
-        if (rows.length === 0) {
+        if (!resetRecord) {
             return NextResponse.json({ status: "FAILED", message: "Invalid or expired token" }, { status: 400 });
         }
 
-        const email = rows[0].email;
+        const email = resetRecord.email;
         const hashedPassword = await bcrypt.hash(newPassword, 10)
 
-        await database.execute("UPDATE Admins SET password_hash = ? WHERE email = ?", [hashedPassword, email]);
-        await database.execute("DELETE FROM Password_resets WHERE email = ?", [email]);
+        // Using transaction for atomicity
+        await prisma.$transaction([
+            prisma.admin.update({
+                where: { email: email },
+                data: { password_hash: hashedPassword }
+            }),
+            prisma.passwordReset.deleteMany({
+                where: { email: email }
+            })
+        ]);
 
         return NextResponse.json({ status: "SUCCESS", message: "Password updated successfully" }, { status: 200 });
     } catch (err) {
@@ -38,16 +48,15 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ status: "FAILED", message: "A required data field is missing !" }, { status: 400 });
         }
 
-        const [rows]: any = await database.execute(
-            "SELECT password_hash FROM Admins WHERE admin_id = ?",
-            [authorizedAdminId]
-        );
+        const admin = await prisma.admin.findUnique({
+            where: { admin_id: Number(authorizedAdminId) }
+        });
 
-        if (rows.length === 0) {
+        if (!admin) {
             return NextResponse.json({ status: "FAILED", message: "Admin not found !" }, { status: 404 });
         }
 
-        const storedPasswordHash = rows[0].password_hash;
+        const storedPasswordHash = admin.password_hash;
         const isMatch = await bcrypt.compare(currentPassword, storedPasswordHash);
         if (!isMatch) {
             return NextResponse.json({ status: "FAILED", message: "Current password is incorrect" }, { status: 401 });
@@ -61,10 +70,13 @@ export async function PUT(req: NextRequest) {
 
         const newHashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await database.execute(
-            "UPDATE Admins SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE admin_id = ?",
-            [newHashedPassword, authorizedAdminId]
-        );
+        await prisma.admin.update({
+            where: { admin_id: Number(authorizedAdminId) },
+            data: {
+                password_hash: newHashedPassword,
+                updated_at: new Date()
+            }
+        });
 
         return NextResponse.json({ status: "SUCCESS", message: "Password updated successfully" }, { status: 200 });
 

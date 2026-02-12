@@ -1,4 +1,4 @@
-import { database } from "@/lib/mysql";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req) {
     try {
@@ -25,6 +25,8 @@ export async function GET(req) {
         }
 
         // Build query dynamically based on provided parameters
+        // Using Prisma $queryRawUnsafe for dynamic query construction with parameters
+
         let query = `
             SELECT 
                 CONCAT(first_name, " ", family_name) as full_name, 
@@ -58,18 +60,27 @@ export async function GET(req) {
             params.push(to);
         }
 
-        const [data] = await database.execute(query, params);
-        
+        const data = await prisma.$queryRawUnsafe(query, ...params);
+
+        // Serialize BigInt if necessary
+        const serializeBigInt = (obj) => {
+            return JSON.parse(JSON.stringify(obj, (key, value) =>
+                typeof value === 'bigint'
+                    ? value.toString()
+                    : value
+            ));
+        }
+
         return Response.json(
-            { status: "SUCCESS", data },
+            { status: "SUCCESS", data: serializeBigInt(data) },
             { status: 200 }
         );
 
     } catch (err) {
         console.error("Database error:", err);
         return Response.json(
-            { 
-                status: "FAILED", 
+            {
+                status: "FAILED",
                 message: "Database operation failed",
                 error: process.env.NODE_ENV === "development" ? err.message : null
             },

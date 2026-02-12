@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  admin_id      Int       @id @default(autoincrement())
+  email         String    @unique @db.VarChar(100)
+  password_hash String    @db.VarChar(255)
+  first_name    String    @db.VarChar(50)
+  family_name   String    @db.VarChar(50)
+  phone_number  String?   @db.VarChar(15)
+  date_of_birth DateTime? @db.Date
+  department    String    @db.VarChar(50)
+  address       String?   @db.VarChar(255)
+  picture       String?   @db.VarChar(255)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  teachers Teacher[]
+  sessions Session[]
+
+  @@map("Admins")
+}
+
+model Teacher {
+  teacher_id     Int       @id @default(autoincrement())
+  first_name     String    @db.VarChar(50)
+  family_name    String    @db.VarChar(50)
+  picture        String?   @db.VarChar(255)
+  email          String    @unique @db.VarChar(100)
+  phone_number   String?   @unique @db.VarChar(15)
+  date_of_birth  DateTime? @db.Date
+  hours_outside  Float     @default(0)
+  is_active      Int       @default(1) @db.TinyInt
+  bio            String?   @db.Text
+  type           String    @db.VarChar(50)
+  account_number String?   @unique @db.VarChar(50)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  admin_id       Int
+
+  admin             Admin             @relation(fields: [admin_id], references: [admin_id])
+  sessions          Session[]
+  absences          Absence[]
+  ranks_of_teachers RanksOfTeacher[]
+  extra_hours_sheet ExtraHoursSheet[]
+
+  @@map("Teachers")
+}
+
+model Session {
+  session_id     Int      @id @default(autoincrement())
+  day_of_week    String
+  start_time     DateTime @db.Time
+  end_time       DateTime @db.Time
+  type           String
+  module         String   @db.VarChar(255)
+  classroom      String   @db.VarChar(50)
+  group_number   String   @db.VarChar(20)
+  academic_year  String   @db.VarChar(9)
+  academic_level Int      @db.TinyInt
+  semester       String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  admin_id       Int
+  teacher_id     Int
+
+  admin    Admin     @relation(fields: [admin_id], references: [admin_id])
+  teacher  Teacher   @relation(fields: [teacher_id], references: [teacher_id])
+  absences Absence[]
+
+  @@map("Sessions")
+}
+
+model Absence {
+  absence_id Int      @id @default(autoincrement())
+  date       DateTime @db.Date
+  caught_up  Int      @default(0) @db.TinyInt
+  reason     String?  @db.VarChar(255)
+  notes      String?  @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  teacher_id Int
+  session_id Int
+
+  teacher Teacher @relation(fields: [teacher_id], references: [teacher_id])
+  session Session @relation(fields: [session_id], references: [session_id])
+
+  @@map("Absences")
+}
+
+model RanksOfTeacher {
+  rank_id       Int      @id @default(autoincrement())
+  starting_date DateTime @db.Date
+  rank          String   @db.VarChar(50)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  teacher_id    Int
+
+  teacher Teacher @relation(fields: [teacher_id], references: [teacher_id])
+
+  @@map("Ranks_of_teachers")
+}
+
+model PasswordReset {
+  password_reset_id Int      @id @default(autoincrement())
+  email             String   @db.VarChar(100)
+  token             String   @db.VarChar(255)
+  expires_at        DateTime
+  created_at        DateTime @default(now())
+
+  @@map("Password_resets")
+}
+
+model Period {
+  period_id Int      @id @default(autoincrement())
+  from      DateTime @db.Date
+  to        DateTime @db.Date
+  name      String?  @db.VarChar(100)
+
+  @@map("Periods")
+}
+
+model Holiday {
+  holiday_id    Int      @id @default(autoincrement())
+  description   String   @db.VarChar(100)
+  from          DateTime @db.Date
+  to            DateTime @db.Date
+  academic_year String   @db.VarChar(9)
+
+  @@map("Holidays")
+}
+
+model Rank {
+  rank_id     Int    @id @default(autoincrement())
+  rank_name   String @db.VarChar(50)
+  rank_price  Float
+  fiscal_year Int?   @db.Year
+
+  @@map("Ranks")
+}
+
+model ExtraHoursSheet {
+  sheet_id           Int      @id @default(autoincrement())
+  from               DateTime @db.Date
+  to                 DateTime @db.Date
+  rank               String   @db.VarChar(50)
+  rank_price         Float
+  extra_hours_number Float
+  amount_of_money    Float
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+  teacher_id         Int
+
+  teacher    Teacher    @relation(fields: [teacher_id], references: [teacher_id])
+  extra_days ExtraDay[]
+
+  @@map("Extra_hours_sheet")
+}
+
+model ExtraDay {
+  extra_day_id    Int      @id @default(autoincrement())
+  day             String   @db.VarChar(50)
+  date            DateTime @db.Date
+  number_of_hours Float
+  sheet_id        Int
+
+  sheet ExtraHoursSheet @relation(fields: [sheet_id], references: [sheet_id])
+
+  @@map("Extra_days")
+}

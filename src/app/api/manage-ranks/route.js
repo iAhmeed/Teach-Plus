@@ -1,4 +1,4 @@
-import { database } from "@/lib/mysql";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req) {
     try {
@@ -7,13 +7,27 @@ export async function POST(req) {
         if (!rankName || !rankPrice) {
             return Response.json({ status: "FAILED", message: "A required data field is missing" }, { status: 400 })
         }
-        const [existingRank] = await database.execute("SELECT * FROM Ranks")
-        for (let rank of existingRank) {
-            if (rank.rank_name == rankName && rank.fiscal_year == fiscalYear && rank.rank_price == rankPrice) {
-                return Response.json({ status: "FAILED", message: "This rank already exists" }, { status: 409 })
+
+        const existingRank = await prisma.rank.findFirst({
+            where: {
+                rank_name: rankName,
+                fiscal_year: fiscalYear ? Number(fiscalYear) : null,
+                rank_price: Number(rankPrice)
             }
+        });
+
+        if (existingRank) {
+            return Response.json({ status: "FAILED", message: "This rank already exists" }, { status: 409 })
         }
-        await database.execute("INSERT INTO Ranks (rank_name, rank_price, fiscal_year) VALUES (?, ?, ?)", [rankName, rankPrice, fiscalYear])
+
+        await prisma.rank.create({
+            data: {
+                rank_name: rankName,
+                rank_price: Number(rankPrice),
+                fiscal_year: fiscalYear ? Number(fiscalYear) : null
+            }
+        });
+
         return Response.json({ status: "SUCCESS", message: "Rank added successfully !" }, { status: 200 })
 
     } catch (err) {
@@ -23,7 +37,8 @@ export async function POST(req) {
 
 export async function GET(req) {
     try {
-        const [ranks] = await database.execute("SELECT * FROM Ranks")
+        const ranks = await prisma.rank.findMany();
+
         if (!ranks.length) {
             return Response.json({ status: "FAILED", message: "No ranks found !" }, { status: 404 })
         }
