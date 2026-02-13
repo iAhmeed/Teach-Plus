@@ -44,8 +44,8 @@ async function sendResetEmail(email: string, resetLink: string) {
     const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            user: process.env.SUPPORT_EMAIL,
+            pass: process.env.SUPPORT_PASSWORD,
         },
     });
 
@@ -57,7 +57,7 @@ async function sendResetEmail(email: string, resetLink: string) {
     htmlContent = htmlContent.replace("${new Date().getFullYear()}", new Date().getFullYear().toString());
 
     await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+        from: process.env.SUPPORT_EMAIL,
         to: email,
         subject: "Password Reset Request",
         html: htmlContent,
