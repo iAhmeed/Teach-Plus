@@ -184,7 +184,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
 
-      const response = await axios.get(`http://localhost:3000/api/teachers?adminId=${data.user.admin_id}`);
+      const response = await axios.get(`/api/teachers?adminId=${data.user.admin_id}`);
 
 
       set({ teachers: response.data.teachers, filteredTeachers: response.data.teachers, error: true });
@@ -229,7 +229,7 @@ const useStore = create((set, get) => ({
       }
       else {
 
-        const response = await axios.get(`http://localhost:3000/api/teachers/search?keyword=${query}&&adminId=${data.user.admin_id}`);
+        const response = await axios.get(`/api/teachers/search?keyword=${query}&&adminId=${data.user.admin_id}`);
         if (!response.data) { set({ empty: true }) }
         set({ teachers: response.data });
         set({ filteredTeachers: response.data });
@@ -246,7 +246,7 @@ const useStore = create((set, get) => ({
     try {
       const data = get();
 
-      await axios.post(`http://localhost:3000/api/teachers`, addedTeacher);
+      await axios.post(`/api/teachers`, addedTeacher);
       data.getTeachers();
 
     } catch (error) {
@@ -268,7 +268,7 @@ const useStore = create((set, get) => ({
   getTeacher: async () => {
     try {
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/teachers/${data.selectedTeacher}`);
+      const response = await axios.get(`/api/teachers/${data.selectedTeacher}`);
 
       set({ teacher: response.data });
     } catch (error) {
@@ -281,7 +281,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get();
-      await axios.put(`http://localhost:3000/api/teachers/${data.selectedTeacher}`, updatedTeacher);
+      await axios.put(`/api/teachers/${data.selectedTeacher}`, updatedTeacher);
       data.getTeachers();
     } catch (error) {
       console.log("Error updating teacher :", error);
@@ -293,7 +293,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get()
-      await axios.delete(`http://localhost:3000/api/teachers/${data.selectedTeacher}`);
+      await axios.delete(`/api/teachers/${data.selectedTeacher}`);
       data.getTeachers();
     } catch (error) {
       console.log("Error deleting teacher:", error);
@@ -304,7 +304,7 @@ const useStore = create((set, get) => ({
   getTeacherTimeTable: async (academicYear, semester) => {
     try {
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/timetable/${data.selectedTeacher}?semester=${semester}&academicYear=${academicYear}`);
+      const response = await axios.get(`/api/timetable/${data.selectedTeacher}?semester=${semester}&academicYear=${academicYear}`);
       set({ teacherTimeTable: response.data.timeTable });
 
     } catch (error) {
@@ -316,7 +316,7 @@ const useStore = create((set, get) => ({
     try {
 
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/timetable/${teacher}?semester=${period.semester}&academicYear=${period.academicYear}`);
+      const response = await axios.get(`/api/timetable/${teacher}?semester=${period.semester}&academicYear=${period.academicYear}`);
       return response.data.timeTable
 
     } catch (error) {
@@ -340,7 +340,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get()
-      const response = await axios.get(`http://localhost:3000/api/absences?teacherId=${data.selectedTeacher}`);
+      const response = await axios.get(`/api/absences?teacherId=${data.selectedTeacher}`);
       set({ absences: response.data.absences });
 
     } catch (error) {
@@ -354,7 +354,7 @@ const useStore = create((set, get) => ({
       const data = get()
 
       // work      
-      const response = await axios.post(`http://localhost:3000/api/absences`, absenceData);
+      const response = await axios.post(`/api/absences`, absenceData);
       data.getAbsences();
     } catch (error) {
       console.log("Error inserting absence:", error);
@@ -372,7 +372,7 @@ const useStore = create((set, get) => ({
     try {
       // work
       const data = get();
-      const response = await axios.patch(`http://localhost:3000/api/absences/${data.selectedAbsence}`, updatedAbsence);
+      const response = await axios.patch(`/api/absences/${data.selectedAbsence}`, updatedAbsence);
       data.getAbsences();
 
     } catch (error) {
@@ -386,7 +386,7 @@ const useStore = create((set, get) => ({
       const data = get();
 
       // work
-      const response = await axios.patch(`http://localhost:3000/api/catch_up_absence/${absenceId}`);
+      const response = await axios.patch(`/api/catch_up_absence/${absenceId}`);
       data.getAbsences();
 
     } catch (error) {
@@ -400,7 +400,7 @@ const useStore = create((set, get) => ({
     try {
       const data = get();
 
-      const response = await axios.delete(`http://localhost:3000/api/absences/${absenceId}`);
+      const response = await axios.delete(`/api/absences/${absenceId}`);
       data.getAbsences();
 
     } catch (error) {
@@ -419,7 +419,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/ranks-history/${data.selectedTeacher}`);
+      const response = await axios.get(`/api/ranks-history/${data.selectedTeacher}`);
       set({ historyRank: response.data.ranksHistory });
 
     } catch (error) {
@@ -432,7 +432,7 @@ const useStore = create((set, get) => ({
     try {
 
       const data = get();
-      const response = await axios.post(`http://localhost:3000/api/ranks`, { teacherId: data.selectedTeacher, ...addedRank });
+      const response = await axios.post(`/api/ranks`, { teacherId: data.selectedTeacher, ...addedRank });
       data.getRanks()
     } catch (error) {
       console.log("Error inserting rank:", error);
@@ -448,7 +448,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get();
-      const response = await axios.put(`http://localhost:3000/api/ranks/${data.selectedRank}`, { newTeacherId: data.selectedTeacher, ...newRank });
+      const response = await axios.put(`/api/ranks/${data.selectedRank}`, { newTeacherId: data.selectedTeacher, ...newRank });
       data.getRanks()
     } catch (error) {
       console.log("Error updating rank", error);
@@ -460,7 +460,7 @@ const useStore = create((set, get) => ({
     try {
       const data = get();
 
-      const response = await axios.delete(`http://localhost:3000/api/ranks/${rankId}`);
+      const response = await axios.delete(`/api/ranks/${rankId}`);
       data.getRanks()
     } catch (error) {
       console.log("Error deleting rank :", error);
@@ -478,7 +478,7 @@ const useStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       // work
-      const response = await axios.get(`http://localhost:3000/api/timetable?promo=${filter.academicLevel}&academicYear=${filter.academicYear}&semester=${filter.semester}`);
+      const response = await axios.get(`/api/timetable?promo=${filter.academicLevel}&academicYear=${filter.academicYear}&semester=${filter.semester}`);
       set({ sessions: response.data.timetable });
       set({ filteredTimeTable: filter })
     } catch (error) {
@@ -491,7 +491,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get();
-      const response = await axios.post(`http://localhost:3000/api/sessions`, addedSession);
+      const response = await axios.post(`/api/sessions`, addedSession);
       data.getSessions(data.filteredTimeTable);
     } catch (error) {
       console.log("Error inserting session:", error);
@@ -507,7 +507,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get();
-      const response = await axios.put(`http://localhost:3000/api/sessions/${data.selectedSession}`, updatedSession);
+      const response = await axios.put(`/api/sessions/${data.selectedSession}`, updatedSession);
       data.getSessions(data.filteredTimeTable);
     } catch (error) {
       console.log("Error updating session:", error);
@@ -518,7 +518,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get();
-      const response = await axios.delete(`http://localhost:3000/api/sessions/${sessionId}`);
+      const response = await axios.delete(`/api/sessions/${sessionId}`);
       data.getSessions(data.filteredTimeTable);
     } catch (error) {
       console.log("Error deleting session:", error);
@@ -542,7 +542,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/periods`);
+      const response = await axios.get(`/api/periods`);
       set({ periods: response.data.periods });
 
     } catch (error) {
@@ -558,7 +558,7 @@ const useStore = create((set, get) => ({
     try {
 
       const data = get();
-      const response = await axios.post(`http://localhost:3000/api/periods`, addedPeriod);
+      const response = await axios.post(`/api/periods`, addedPeriod);
       data.getPeriods()
     } catch (error) {
       console.log("Error inserting period:", error);
@@ -572,7 +572,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get();
-      const response = await axios.put(`http://localhost:3000/api/periods/${periodId}`, newPeriod);
+      const response = await axios.put(`/api/periods/${periodId}`, newPeriod);
       data.getPeriods()
     } catch (error) {
       console.log("Error updating period", error);
@@ -586,7 +586,7 @@ const useStore = create((set, get) => ({
     try {
       const data = get();
 
-      const response = await axios.delete(`http://localhost:3000/api/periods/${periodId}`);
+      const response = await axios.delete(`/api/periods/${periodId}`);
       data.getPeriods()
     } catch (error) {
       console.log("Error deleting rank :", error);
@@ -621,7 +621,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/holidays`);
+      const response = await axios.get(`/api/holidays`);
       set({ holidays: response.data.holidays });
 
     } catch (error) {
@@ -637,7 +637,7 @@ const useStore = create((set, get) => ({
     try {
 
       const data = get();
-      const response = await axios.post(`http://localhost:3000/api/holidays`, addedHoliday);
+      const response = await axios.post(`/api/holidays`, addedHoliday);
       data.getHolidays()
     } catch (error) {
       console.log("Error inserting rank:", error);
@@ -651,7 +651,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get();
-      const response = await axios.put(`http://localhost:3000/api/holidays/${holidayId}`, newHoliday);
+      const response = await axios.put(`/api/holidays/${holidayId}`, newHoliday);
       data.getHolidays()
     } catch (error) {
       console.log("Error updating holiday", error);
@@ -665,7 +665,7 @@ const useStore = create((set, get) => ({
     try {
       const data = get();
 
-      const response = await axios.delete(`http://localhost:3000/api/holidays/${holidayId}`);
+      const response = await axios.delete(`/api/holidays/${holidayId}`);
       data.getHolidays()
     } catch (error) {
       console.log("Error deleting holiday :", error);
@@ -684,7 +684,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/teacher-periods?teacherId=${teacherId}&academicYear=${academicYear}`);
+      const response = await axios.get(`/api/teacher-periods?teacherId=${teacherId}&academicYear=${academicYear}`);
 
 
       return response.data.data
@@ -704,7 +704,7 @@ const useStore = create((set, get) => ({
     // work
     try {
 
-      const response = await axios.post(`http://localhost:3000/api/sheets`, infos);
+      const response = await axios.post(`/api/sheets`, infos);
 
 
       return response.data
@@ -722,7 +722,7 @@ const useStore = create((set, get) => ({
     // work
     try {
 
-      const response = await axios.put(`http://localhost:3000/api/sheets/${infos.sheetId}`, infos);
+      const response = await axios.put(`/api/sheets/${infos.sheetId}`, infos);
 
       console.log(response.data);
 
@@ -742,7 +742,7 @@ const useStore = create((set, get) => ({
     // work
     try {
 
-      const response = await axios.get(`http://localhost:3000/api/sheets/total?type=${type}&category=${category}&from=${from}&to=${to}`);
+      const response = await axios.get(`/api/sheets/total?type=${type}&category=${category}&from=${from}&to=${to}`);
 
 
       return response.data.data
@@ -765,7 +765,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get();
-      const response = await axios.get(`http://localhost:3000/api/manage-ranks`);
+      const response = await axios.get(`/api/manage-ranks`);
       set({ ranks: response.data.ranks })
 
     } catch (error) {
@@ -783,7 +783,7 @@ const useStore = create((set, get) => ({
       const data = get();
       console.log(addedRank);
 
-      await axios.post(`http://localhost:3000/api/manage-ranks`, addedRank);
+      await axios.post(`/api/manage-ranks`, addedRank);
       data.getRanksList()
     } catch (error) {
       console.log("Error inserting rank:", error);
@@ -797,7 +797,7 @@ const useStore = create((set, get) => ({
     // work 
     try {
       const data = get();
-      const response = await axios.put(`http://localhost:3000/api/manage-ranks/${rankId}`, newRank);
+      const response = await axios.put(`/api/manage-ranks/${rankId}`, newRank);
       data.getRanksList()
     } catch (error) {
       console.log("Error updating rank", error);
@@ -811,7 +811,7 @@ const useStore = create((set, get) => ({
     try {
       const data = get();
 
-      await axios.delete(`http://localhost:3000/api/manage-ranks/${rankId}`);
+      await axios.delete(`/api/manage-ranks/${rankId}`);
       data.getRanksList()
     } catch (error) {
       console.log("Error deleting rank :", error);
@@ -824,7 +824,7 @@ const useStore = create((set, get) => ({
 
     // work
     try {
-      const response = await axios.get(`http://localhost:3000/api/statistics?from=${from}&to=${to}`);
+      const response = await axios.get(`/api/statistics?from=${from}&to=${to}`);
       return response.data.data
 
 
