@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 
-export async function GET(req: Request, context: { params: { id: string } }) {
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
     const authorizedAdminId = req.headers.get("x-admin-id")
@@ -22,7 +22,7 @@ export async function GET(req: Request, context: { params: { id: string } }) {
   }
 }
 
-export async function PUT(req: Request, context: { params: { id: string } }) {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const authorizedAdminId = req.headers.get("x-admin-id")
     const { id } = await context.params;
@@ -97,7 +97,7 @@ export async function PUT(req: Request, context: { params: { id: string } }) {
   }
 }
 
-export async function DELETE(req: Request, context: { params: { id: string } }) {
+export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const authorizedAdminId = req.headers.get("x-admin-id")
     const { id } = await context.params
@@ -145,7 +145,7 @@ export async function DELETE(req: Request, context: { params: { id: string } }) 
   }
 }
 
-export async function PATCH(req: Request, context: { params: { id: string } }) {
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const authorizedAdminId = req.headers.get("x-admin-id")
     const { id } = await context.params
