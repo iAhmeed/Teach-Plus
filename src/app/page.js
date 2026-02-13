@@ -16,7 +16,7 @@ const LoginPage = () => {
   const [errorr, setErrorr] = useState("");
 
   const router = useRouter();
-  const { login, isLoading ,error} = useStore();
+  const { login, isLoading, error } = useStore();
 
   const handleForgotPassword = () => {
     router.push("/forgotPassword");
@@ -29,17 +29,17 @@ const LoginPage = () => {
     setPasswordError("");
     setErrorr("");
 
-   if (!email) {
-  setEmailError("Email is required");
-  return;
-}
+    if (!email) {
+      setEmailError("Email is required");
+      return;
+    }
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-if (!emailRegex.test(email)) {
-  setEmailError("Invalid email format");
-  return;
-}
+    if (!emailRegex.test(email)) {
+      setEmailError("Invalid email format");
+      return;
+    }
     if (!password) {
       setPasswordError("Password is required");
       return;
@@ -93,9 +93,8 @@ if (!emailRegex.test(email)) {
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full pl-10 p-3 border rounded-lg bg-gray-100 focus:outline-none ${
-                  emailError ? "border-red-500" : "focus:border-indigo-500"
-                }`}
+                className={`w-full pl-10 p-3 border rounded-lg bg-gray-100 focus:outline-none ${emailError ? "border-red-500" : "focus:border-indigo-500"
+                  }`}
               />
             </div>
             {emailError && <p className="mt-1 text-red-500">{emailError}</p>}
@@ -109,9 +108,8 @@ if (!emailRegex.test(email)) {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pl-10 pr-10 p-3 border rounded-lg bg-gray-100 focus:outline-none ${
-                  passwordError ? "border-red-500" : "focus:border-indigo-500"
-                }`}
+                className={`w-full pl-10 pr-10 p-3 border rounded-lg bg-gray-100 focus:outline-none ${passwordError ? "border-red-500" : "focus:border-indigo-500"
+                  }`}
               />
               <div
                 onClick={() => setShowPassword(!showPassword)}
@@ -133,7 +131,7 @@ if (!emailRegex.test(email)) {
           </button>
 
           <p
-            className="mt-4 text-right text-sm text-gray-500 cursor-pointer"
+            className="mt-4 text-right text-sm text-gray-500 cursor-pointer hover:text-blue-800 transition-colors duration-200"
             onClick={handleForgotPassword}
           >
             Having Issues with your Password?

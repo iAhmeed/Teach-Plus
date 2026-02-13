@@ -42,7 +42,7 @@ const useStore = create((set, get) => ({
     } catch (err) {
       console.error("Logout failed", err);
     } finally {
-      
+
       Cookies.remove("session");
       set({ user: null, token: null });
 
@@ -79,7 +79,7 @@ const useStore = create((set, get) => ({
       set({ user: userData, token });
     } catch (error) {
       console.error("Failed to refresh token:", error);
-      get().logout(); 
+      get().logout();
     }
   },
   //delete account 
@@ -92,7 +92,7 @@ const useStore = create((set, get) => ({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      
+
       Cookies.remove("session");
       set({ user: null, token: null });
     } catch (error) {
@@ -107,7 +107,7 @@ const useStore = create((set, get) => ({
       const data = get();
       await axios.put("/api/auth/update-profile", updatedData);
 
-    
+
       data.getAdmin();
     } catch (error) {
       console.error("Failed to update profile:", error);
@@ -116,7 +116,7 @@ const useStore = create((set, get) => ({
       set({ isLoading: false });
     }
   },
-  
+
   // Forgot Password
   forgotPassword: async (email) => {
     set({ isLoading: true, success: null, error: null });
@@ -133,7 +133,7 @@ const useStore = create((set, get) => ({
     }
   },
 
- 
+
 
   resetPassword: async (token, newPassword) => {
     set({ isLoading: true, success: null, error: null });
@@ -142,15 +142,12 @@ const useStore = create((set, get) => ({
 
       if (res.data.status === "SUCCESS") {
         set({ success: res.data.message });
-        alert(res.data.message); 
       } else {
         set({ error: res.data.message });
-        alert(res.data.message); 
       }
 
     } catch (err) {
       set({ error: err.response?.data?.message || 'Échec de la réinitialisation du mot de passe' });
-      alert(err.response?.data?.message || 'Échec de la réinitialisation du mot de passe');
     } finally {
       set({ isLoading: false });
     }
@@ -284,7 +281,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get();
-       await axios.put(`http://localhost:3000/api/teachers/${data.selectedTeacher}`, updatedTeacher);
+      await axios.put(`http://localhost:3000/api/teachers/${data.selectedTeacher}`, updatedTeacher);
       data.getTeachers();
     } catch (error) {
       console.log("Error updating teacher :", error);
@@ -296,7 +293,7 @@ const useStore = create((set, get) => ({
     // work
     try {
       const data = get()
-       await axios.delete(`http://localhost:3000/api/teachers/${data.selectedTeacher}`);
+      await axios.delete(`http://localhost:3000/api/teachers/${data.selectedTeacher}`);
       data.getTeachers();
     } catch (error) {
       console.log("Error deleting teacher:", error);
@@ -304,7 +301,7 @@ const useStore = create((set, get) => ({
   },
 
 
-  getTeacherTimeTable: async (academicYear , semester) => {
+  getTeacherTimeTable: async (academicYear, semester) => {
     try {
       const data = get();
       const response = await axios.get(`http://localhost:3000/api/timetable/${data.selectedTeacher}?semester=${semester}&academicYear=${academicYear}`);
@@ -315,9 +312,9 @@ const useStore = create((set, get) => ({
     }
   },
 
-  timeTableOfTeacher: async (teacher , period) => {
+  timeTableOfTeacher: async (teacher, period) => {
     try {
-      
+
       const data = get();
       const response = await axios.get(`http://localhost:3000/api/timetable/${teacher}?semester=${period.semester}&academicYear=${period.academicYear}`);
       return response.data.timeTable
@@ -531,7 +528,7 @@ const useStore = create((set, get) => ({
 
 
 
-  
+
 
   // handle Periods .........................................................................
 
@@ -676,165 +673,165 @@ const useStore = create((set, get) => ({
   },
 
 
-// sub periods and calculate extra hours 
+  // sub periods and calculate extra hours 
 
 
 
-getSubPeriods: async (teacherId , academicYear) => {
-    
-  set({ isLoading: true});
+  getSubPeriods: async (teacherId, academicYear) => {
 
-  // work
-  try {
-    const data = get();
-    const response = await axios.get(`http://localhost:3000/api/teacher-periods?teacherId=${teacherId}&academicYear=${academicYear}`);
-    
-    
-    return response.data.data
+    set({ isLoading: true });
 
-  } catch (error) {
-    return []
-  }finally{set({ isLoading: false});}
-},
+    // work
+    try {
+      const data = get();
+      const response = await axios.get(`http://localhost:3000/api/teacher-periods?teacherId=${teacherId}&academicYear=${academicYear}`);
 
 
+      return response.data.data
 
-
-getExtraHoursSheet: async (infos) => {
-    
-  set({ isLoading: true});
-
-  // work
-  try {
-    
-    const response = await axios.post(`http://localhost:3000/api/sheets` , infos);
- 
-    
-     return response.data
-  } catch (error) {
-    console.log(error);
-    
-    return {}
-  }finally{set({ isLoading: false});}
-},
-
-recalculateSheet :  async (infos) => {
-    
-  set({ isLoading: true});
-
-  // work
-  try {
-    
-    const response = await axios.put(`http://localhost:3000/api/sheets/${infos.sheetId}` , infos);
- 
-    console.log(response.data);
-    
-     return response.data
-  } catch (error) {
-    console.log(error);
-    
-    return {}
-  }finally{set({ isLoading: false});}
-},
-
-
-getTotalExtraHours: async (type , category , from , to) => {
-    
-  set({ isLoading: true});
-
-  // work
-  try {
-    
-    const response = await axios.get(`http://localhost:3000/api/sheets/total?type=${type}&category=${category}&from=${from}&to=${to}` );
- 
-    
-     return response.data.data
-  } catch (error) {
-    console.log(error);
-    
-    return {}
-  }finally{set({ isLoading: false});}
-},
-
-
-// ranks management ............................................................
-
-ranks : [],
-
-getRanksList: async () => {
-
-  set({ isLoading: true });
-
-  // work
-  try {
-    const data = get();
-    const response = await axios.get(`http://localhost:3000/api/manage-ranks`);
-    set({ranks : response.data.ranks})
-
-  } catch (error) {
-    set({ranks : []})
-  } finally { set({ isLoading: false }); }
-},
+    } catch (error) {
+      return []
+    } finally { set({ isLoading: false }); }
+  },
 
 
 
-addRankInfos: async (addedRank) => {
-  set({ isLoading: true });
-  // work
-  try {
 
-    const data = get();
-    console.log(addedRank);
-    
-    await axios.post(`http://localhost:3000/api/manage-ranks`, addedRank);
-    data.getRanksList()
-  } catch (error) {
-    console.log("Error inserting rank:", error);
-  } finally { set({ isLoading: false }); }
-},
+  getExtraHoursSheet: async (infos) => {
+
+    set({ isLoading: true });
+
+    // work
+    try {
+
+      const response = await axios.post(`http://localhost:3000/api/sheets`, infos);
 
 
+      return response.data
+    } catch (error) {
+      console.log(error);
 
-updateRankInfos: async (rankId, newRank) => {
-  set({ isLoading: true });
-  // work 
-  try {
-    const data = get();
-    const response = await axios.put(`http://localhost:3000/api/manage-ranks/${rankId}`, newRank);
-    data.getRanksList()
-  } catch (error) {
-    console.log("Error updating rank", error);
-  } finally { set({ isLoading: false }); }
-},
+      return {}
+    } finally { set({ isLoading: false }); }
+  },
+
+  recalculateSheet: async (infos) => {
+
+    set({ isLoading: true });
+
+    // work
+    try {
+
+      const response = await axios.put(`http://localhost:3000/api/sheets/${infos.sheetId}`, infos);
+
+      console.log(response.data);
+
+      return response.data
+    } catch (error) {
+      console.log(error);
+
+      return {}
+    } finally { set({ isLoading: false }); }
+  },
 
 
-deleteRankInfos: async (rankId) => {
-  set({ isLoading: true });
-  // work
-  try {
-    const data = get();
+  getTotalExtraHours: async (type, category, from, to) => {
 
-    await axios.delete(`http://localhost:3000/api/manage-ranks/${rankId}`);
-    data.getRanksList()
-  } catch (error) {
-    console.log("Error deleting rank :", error);
-  } finally { set({ isLoading: false }); }
-},
+    set({ isLoading: true });
 
-getStatistics: async (from , to) => {
+    // work
+    try {
 
-  set({ isLoading: true });
+      const response = await axios.get(`http://localhost:3000/api/sheets/total?type=${type}&category=${category}&from=${from}&to=${to}`);
 
-  // work
-  try {
-    const response = await axios.get(`http://localhost:3000/api/statistics?from=${from}&to=${to}`);
-    return response.data.data
- 
- 
-  } catch (error) {
-return {} 
- } finally { set({ isLoading: false }); }
-},
+
+      return response.data.data
+    } catch (error) {
+      console.log(error);
+
+      return {}
+    } finally { set({ isLoading: false }); }
+  },
+
+
+  // ranks management ............................................................
+
+  ranks: [],
+
+  getRanksList: async () => {
+
+    set({ isLoading: true });
+
+    // work
+    try {
+      const data = get();
+      const response = await axios.get(`http://localhost:3000/api/manage-ranks`);
+      set({ ranks: response.data.ranks })
+
+    } catch (error) {
+      set({ ranks: [] })
+    } finally { set({ isLoading: false }); }
+  },
+
+
+
+  addRankInfos: async (addedRank) => {
+    set({ isLoading: true });
+    // work
+    try {
+
+      const data = get();
+      console.log(addedRank);
+
+      await axios.post(`http://localhost:3000/api/manage-ranks`, addedRank);
+      data.getRanksList()
+    } catch (error) {
+      console.log("Error inserting rank:", error);
+    } finally { set({ isLoading: false }); }
+  },
+
+
+
+  updateRankInfos: async (rankId, newRank) => {
+    set({ isLoading: true });
+    // work 
+    try {
+      const data = get();
+      const response = await axios.put(`http://localhost:3000/api/manage-ranks/${rankId}`, newRank);
+      data.getRanksList()
+    } catch (error) {
+      console.log("Error updating rank", error);
+    } finally { set({ isLoading: false }); }
+  },
+
+
+  deleteRankInfos: async (rankId) => {
+    set({ isLoading: true });
+    // work
+    try {
+      const data = get();
+
+      await axios.delete(`http://localhost:3000/api/manage-ranks/${rankId}`);
+      data.getRanksList()
+    } catch (error) {
+      console.log("Error deleting rank :", error);
+    } finally { set({ isLoading: false }); }
+  },
+
+  getStatistics: async (from, to) => {
+
+    set({ isLoading: true });
+
+    // work
+    try {
+      const response = await axios.get(`http://localhost:3000/api/statistics?from=${from}&to=${to}`);
+      return response.data.data
+
+
+    } catch (error) {
+      return {}
+    } finally { set({ isLoading: false }); }
+  },
 
 
 }));

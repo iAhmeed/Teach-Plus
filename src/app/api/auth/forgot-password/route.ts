@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import fs from "fs";
+import path from "path";
 
 export async function POST(req: NextRequest) {
     try {
@@ -46,10 +48,18 @@ async function sendResetEmail(email: string, resetLink: string) {
             pass: process.env.EMAIL_PASS,
         },
     });
+
+    const templatePath = path.join(process.cwd(), "src/app/api/auth/forgot-password/password_reset_email.html");
+    let htmlContent = fs.readFileSync(templatePath, "utf-8");
+
+    // Replace placeholders
+    htmlContent = htmlContent.replace("${resetLink}", resetLink);
+    htmlContent = htmlContent.replace("${new Date().getFullYear()}", new Date().getFullYear().toString());
+
     await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
         subject: "Password Reset Request",
-        html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link expires in 30 minutes.</p>`,
+        html: htmlContent,
     });
 }

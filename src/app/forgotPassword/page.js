@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import useStore from '@/store/useStore'
 import { MdEmail } from 'react-icons/md'
+import Link from 'next/link'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
-  const { forgotPassword, isLoading, error } = useStore()
+  const { forgotPassword, isLoading, error, success } = useStore()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,36 +40,60 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email Address
-              </label>
-              <div className="relative mt-1">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                  <MdEmail className="w-5 h-5" />
-                </span>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="pl-10 py-2 px-3 block w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+          {!success ? (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email Address
+                  </label>
+                  <div className="relative mt-1">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                      <MdEmail className="w-5 h-5" />
+                    </span>
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="pl-10 py-2 px-3 block w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2 bg-blue-950 text-white cursor-pointer font-semibold rounded-lg hover:bg-indigo-900 transition"
+                >
+                  {isLoading ? 'Sending...' : 'Send Reset Link'}
+                </button>
+              </form>
+              {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+            </>
+          ) : (
+            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-6 rounded-xl text-center shadow-sm">
+              <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
+              <h3 className="text-lg font-bold mb-2 text-green-900">Link Sent Successfully!</h3>
+              <p className="text-sm">
+                A reset link has been sent to your email address. Please check your inbox and follow the instructions.
+              </p>
             </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-2 bg-blue-950 text-white font-semibold rounded-lg hover:bg-indigo-900 transition"
+          <div className="text-center">
+            <Link
+              href="/"
+              className="text-sm font-medium text-blue-950 hover:text-blue-800 transition-colors"
             >
-              {isLoading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </form>
-
-          {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+              ← Back to login
+            </Link>
+          </div>
         </div>
       </div>
     </div>

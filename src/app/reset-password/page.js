@@ -17,7 +17,7 @@ export default function ResetPassword() {
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { resetPassword } = useStore()
+  const { resetPassword, success, error } = useStore()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -29,16 +29,19 @@ export default function ResetPassword() {
     setIsSubmitting(true)
     try {
       await resetPassword(token, password)
-      setMessage("Password reset successfully.")
+      // Note: useStore already sets success/error
       setTimeout(() => {
         router.push('/')
       }, 2000)
     } catch (err) {
-      setMessage("Failed to reset password.")
+      // Error is handled in the store
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  // Effect to sync local message with store if needed, or just display store error/success directly
+  const displayMessage = message || error || success;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -106,13 +109,16 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-950 text-white font-semibold py-2 rounded-lg hover:bg-indigo-800 transition disabled:opacity-50"
+              className="w-full bg-blue-950 text-white font-semibold py-2 cursor-pointer rounded-lg hover:bg-indigo-800 transition disabled:opacity-50"
             >
               {isSubmitting ? 'Processing...' : 'Reset Password'}
             </button>
 
-            {message && (
-              <p className="text-sm text-center text-gray-600 mt-3">{message}</p>
+            {displayMessage && (
+              <p className={`text-sm text-center mt-3 ${(displayMessage.includes("successfully") || displayMessage === success) ? "text-green-600" : "text-red-500"
+                }`}>
+                {displayMessage}
+              </p>
             )}
           </form>
         </div>

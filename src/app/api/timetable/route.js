@@ -6,7 +6,6 @@ export async function GET(req) {
         const promo = searchParams.get("promo")
         const academicYear = searchParams.get("academicYear")
         const semester = searchParams.get("semester")
-
         const timetable = await prisma.session.findMany({
             where: {
                 academic_level: Number(promo),
@@ -21,6 +20,7 @@ export async function GET(req) {
         }
         return Response.json({ status: "SUCESS", message: "Timetable found successfully !", timetable: timetable }, { status: 200 })
     } catch (err) {
+        console.log(err)
         return Response.json({ status: "FAILED", message: err.message }, { status: 500 })
     }
 }
