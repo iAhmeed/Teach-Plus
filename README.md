@@ -83,6 +83,7 @@ Teach Plus is a comprehensive educational management system designed for schools
 - Node.js (v18 or later)
 - npm package manager
 - MySQL database
+- Prisma CLI (recommended for database migrations)
 
 ### Installation Steps
 
@@ -99,22 +100,18 @@ Teach Plus is a comprehensive educational management system designed for schools
 
 3. **Configure environment variables**
 
-   Create a `.env.local` file in the root directory with the following variables:
+   Create a `.env` (or `.env.local`) file in the root directory with the following variables:
    ```
-   DATABASE_HOST=your_database_host
-   DATABASE_USER=your_database_user
-   DATABASE_PASSWORD=your_database_password
-   DATABASE_NAME=your_database_name
-   DATABASE_PORT=3306
+   DATABASE_URL=mysql://user:password@host:port/database
 
    SESSION_SECRET=your_jwt_secret_key
 
    NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
-   EMAIL_USER=your_email@gmail.com
-   EMAIL_PASSWORD=your_email_password
+   SUPPORT_EMAIL=your_email@gmail.com
+   SUPPORT_PASSWORD=your_email_password
 
-   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+   CLOUDINARY_CLOUD_NAME=your_cloudinary_name
    CLOUDINARY_API_KEY=your_api_key
    CLOUDINARY_API_SECRET=your_api_secret
 
@@ -122,8 +119,11 @@ Teach Plus is a comprehensive educational management system designed for schools
    ```
 
 4. **Set up the database**
-   - Create a MySQL database with the name specified in your environment variables
-   - Run database migrations (if available) or import the provided schema
+   - Create a MySQL database and configure the `DATABASE_URL` in your `.env` file.
+   - Run Prisma migrations to set up your schema:
+     ```bash
+     npx prisma db push
+     ```
 
 5. **Run the development server**
    ```bash
@@ -139,9 +139,9 @@ Teach Plus is a comprehensive educational management system designed for schools
    ```
 
 ### Database Connection
-- Default: Remote MySQL at `freesqldatabase.com`
-- Local setup: Update `DATABASE_HOST` to your local MySQL server
-- Connection pooling is enabled for performance optimization
+- **ORM Configured:** Prisma is used for database interactions.
+- Update the `DATABASE_URL` in your `.env` file to point to your local or remote MySQL server.
+- Connection pooling is handled by Prisma.
 
 ---
 
@@ -189,16 +189,16 @@ Teach Plus/
 │   │   └── useStore.js               # Central state store for app-wide state
 │   │
 │   ├── lib/                          # Utility functions and helpers
-│   │   ├── mysql.js                  # MySQL connection pool
+│   │   ├── prisma.ts                 # Prisma ORM connection client
 │   │   ├── calculate.js              # Hour calculation utilities
 │   │   └── cloudinary.js             # Cloudinary integration
-│   │
-│   ├── images/                       # Static image assets
-│   │   └── [Application logos and images]
 │   │
 │   └── middleware.js                 # JWT authentication middleware
 │
 ├── public/                           # Public static assets
+│
+├── prisma/                           # Database schema and migrations
+│   └── schema.prisma                 # Prisma data modeling
 │
 ├── Configuration Files
 │   ├── next.config.mjs               # Next.js configuration
@@ -221,18 +221,18 @@ Teach Plus/
 - **`src/components/`** - Reusable React components for the UI (forms, tables, dialogs, etc.)
 - **`src/store/`** - Zustand state management for global application state
 - **`src/lib/`** - Utility functions for database operations, calculations, and external integrations
-- **`src/images/`** - Static assets used throughout the application
+- **`prisma/`** - Prisma schemas and migration configurations
 
 ### Technology Stack
 
 | Category | Technology | Version |
 |----------|-----------|---------|
-| **Frontend Framework** | Next.js | 15.2.4 |
+| **Frontend Framework** | Next.js | 15.2.8 |
 | **UI Library** | React | 19.1.0 |
 | **Styling** | Tailwind CSS | 4.1.7 |
 | **State Management** | Zustand | 5.0.3 |
-| **Database** | MySQL | 2 (Node.js driver) |
-| **Authentication** | JWT (Jose) | 6.0.10 |
+| **Database ORM** | Prisma | 6.19.2 |
+| **Authentication** | JWT (Jose), bcrypt | 6.0.10, 5.1.1 |
 | **Export Formats** | jsPDF, XLSX | 3.0.1, 0.18.5 |
 | **Cloud Storage** | Cloudinary | 2.6.0 |
 | **Charts** | Recharts | 2.15.3 |
